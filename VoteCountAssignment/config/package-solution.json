@@ -1,0 +1,13 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "vote-count-assignment-client-side-solution",
+    "id": "f7d1d70d-eb97-496f-aa99-d90324a34d3b",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true
+  },
+  "paths": {
+    "zippedPackage": "solution/vote-count-assignment.sppkg"
+  }
+}

@@ -26,82 +26,68 @@ export default class VotingCountWebPart extends BaseClientSideWebPart<IVotingCou
         <div class="${ styles.container }">
           <div class="${ styles.row }">
             <div class="${ styles.column }">
-            
-           <div id="buttonid"></div>
-          
-          
-           <button type="button" id="saveid">SAVE</button>
+              <div id="buttonid"></div>
+              <button type="button" id="saveid">SAVE</button>
             </div>
-            
-            
           </div>
         </div>
       </div>`;
-
       var Url = this.context.pageContext.web.absoluteUrl;
-
-      $(document).ready(function(){
+      $(document).ready(function()
+      {
         GetLocation();
-        $(document).on("click","#saveid",function(){
-          
-         var getvalue = $('input[name=loc]:checked').attr('value');
-                  
+        $(document).on("click","#saveid",function()
+        {
+         var getvalue = $('input[name=loc]:checked').attr('value');         
          SaveVote(getvalue);
-         
-
-
         });
-      
-        
-            
       });
-     
-      
       function SaveVote(getvalue)
       {
-       
-        
-       
-        let html: string = '';
-          if (Environment.type === EnvironmentType.Local)
+        if (Environment.type === EnvironmentType.Local)
           {
             this.domElement.querySelector('#saveid').innerHTML = "Sorry this does not work in local workbench";
           } 
-          else 
+        else 
           {
-            
-            alert("else");
-              pnp.sp.web.lists.getByTitle("Sravani_NewVotes").items.select("Location", "Lookup/Title").expand("Lookup").get().then((items: any[]) => {
-              console.log(getvalue);
-              });
-              var call = jQuery.ajax({
-                url:Url + `/_api/web/lists/getbytitle('Sravani_NewVotes')/Items`,
-                  type: "POST",
-                  data: JSON.stringify({
-                    
-                      "__metadata": { type: "SP.Data.Sravani_NewVotesListItem" },
-                      Title: "sample",
-                      Votes:1,
-                      Location:getvalue
-                      //AssignedToId: userId,
-                      
-                  }),
-                  headers: {
-                    Accept: "application/json;odata=verbose"
-                            }
-                });
-              call.done(function (data, textStatus, jqXHR) {
-                alert("dkfgi");
-                var message =  $("#saveid");
-                $.each(data.d.results,function(value,element){
-                message.append(element.VoteId);
+           alert("else");
+            // pnp.sp.web.lists.getByTitle("Sravani_NewVotes").items.select("Location", "Lookup/Title").expand("Lookup").get().then((items: any[]) => 
+            // {
+            // console.log(getvalue);
+            // });
+            var call = jQuery.ajax(
+            {
+              url:Url + `/_api/web/lists/getbytitle('Sravani_NewVotes')/Items/?$top=1`,
+              type: "GET",
+              data: JSON.stringify(
+                {
+                  "__metadata": { type: "SP.Data.Sravani_NewVotesListItem" },
+                  Title: "sample",
+                  Votes:1,
+                  Location:getvalue
+                }),
+                headers: 
+                {
+                  Accept: "application/json;odata=verbose"
+                  "Content-Type": "application/json;odata=verbose",
+                  "X-RequestDigest": jQuery("#__REQUESTDIGEST").val()
+                }
+            });
+            call.done(function (data, textStatus, jqXHR) 
+            {
+              var value=getvalue;
+              var message =  $("#saveid");
+              $.each(data.d.results,function(value,element)
+              {
+              message.append(element.VoteId);
               });
             });
-              call.fail(function (jqXHR, textStatus, errorThrown) {
-                var response = JSON.parse(jqXHR.responseText);
-                var message = response ? response.error.message.value : textStatus;
-                alert("Call failed. Error: " + message);
-              });
+            call.fail(function (jqXHR, textStatus, errorThrown) 
+            {
+              var response = JSON.parse(jqXHR.responseText);
+              var message = response ? response.error.message.value : textStatus;
+              alert("Call failed. Error: " + message);
+            });
            
           }
         }
@@ -109,13 +95,12 @@ export default class VotingCountWebPart extends BaseClientSideWebPart<IVotingCou
          
       function GetLocation()
       {
-       
-          let html: string = '';
-          if (Environment.type === EnvironmentType.Local) {
+        if (Environment.type === EnvironmentType.Local)
+        {
             this.domElement.querySelector('#buttonid').innerHTML = "Sorry this does not work in local workbench";
-          }
-          else 
-          {
+        }
+        else 
+        {
             var call =  $.ajax({
               url: Url + `/_api/web/lists/getbytitle('Sravani_Location')/Items?$select=Title,ID`,
               type: "GET",
@@ -139,12 +124,11 @@ export default class VotingCountWebPart extends BaseClientSideWebPart<IVotingCou
                 var message = response ? response.error.message.value : textStatus;
                 alert("Call failed. Error: " + message);
             });          
-            }
+        }
       }
 
     }
   
-
   protected get dataVersion(): Version {
     return Version.parse('1.0');
   }

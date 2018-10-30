@@ -8,13 +8,18 @@ import { escape } from '@microsoft/sp-lodash-subset';
 import{SPComponentLoader} from '@microsoft/sp-loader';
 import styles from './VotingCountWebPart.module.scss';
 import * as strings from 'VotingCountWebPartStrings';
-//import { IDigestCache, DigestCache } from '@microsoft/sp-http';
+import { IDigestCache, DigestCache } from '@microsoft/sp-http';
 import * as $ from 'jquery';
 import pnp from "sp-pnp-js";
 import {GoogleCharts} from 'google-charts';
-import { CurrentUser } from 'sp-pnp-js/lib/sharepoint/siteusers';
+
 require('bootstrap');
-var selid;
+var CurrentUser;
+var SelectedId;
+var IsVoted:boolean;
+var UpdatedId;
+var UserId;
+
 
 export interface IVotingCountWebPartProps {
   description: string;
@@ -22,6 +27,8 @@ export interface IVotingCountWebPartProps {
 
 export default class VotingCountWebPart extends BaseClientSideWebPart<IVotingCountWebPartProps> {
 
+  /*******tried for error request digest********/
+ 
   // protected onInit(): Promise<void> {
   //   return new Promise<void>((resolve: () => void, reject: (error: any) => void): void => {
   //     const digestCache: IDigestCache = this.context.serviceScope.consume(DigestCache.serviceKey);
@@ -34,102 +41,136 @@ export default class VotingCountWebPart extends BaseClientSideWebPart<IVotingCou
   //     });
   //   });
   // }
+  
   public render(): void {
    
     let url="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css";
     SPComponentLoader.loadCss(url); 
-    let CurrentUser=this.context.pageContext.user.displayName;
-    alert(CurrentUser);
+    CurrentUser=this.context.pageContext.user.displayName;
+    //alert(CurrentUser);
     this.domElement.innerHTML = `
       <div class="${ styles.votingCount }">
         <div class="${ styles.container }">
           <div class="${ styles.row }">
             <div class="${ styles.column }">
-            <div id='UserLabelid'></div>
-              <div id="buttonid"></div>
+            <div id='UserLabelId'></div>
+              <div id=LocButtonId"></div>
               <br>
               <br>
               
-              <button type="button" id="saveid" style="color:DodgerBlue;">SAVE</button>
-            <div id="chart"></div>  
+              <button type="button" id="SaveBtnId" style="color:DodgerBlue;">SAVE</button>
+            <div id="ChartId"></div>  
             </div>
-
           </div>
         </div>
       </div>`;
       
-      var Url = this.context.pageContext.web.absoluteUrl;
+      var AbsUrl = this.context.pageContext.web.absoluteUrl;
      
      
       $(document).ready(function()
       {
         
-        GetLocation();
-                          
+        GetLocation();//getting the locations
+         
+        //on click of location button 
         $(document).on("click",".btncls",function()
         {
       
-         selid=$(this).attr('id');
+         SelectedId=$(this).attr('id');
          
-         alert("clicked button id is"+selid);         
+         //alert("clicked button id is"+selid);         
         $(".btncls").removeClass('active').addClass('disabled');
-        $('#'+selid).removeAttr('class');
-        $('#'+selid).addClass('active btn btn-success'); 
+        $('#'+SelectedId).removeAttr('class');
+        $('#'+SelectedId).addClass('active btn btn-success'); 
 
         });
-             
-         $(document).on("click","#saveid",function()
-            {                        
-                SaveVote();
-            });
-            GetCurrentUser();
-        GoogleCharts.load(drawChart);
-                var actualdata=([['Location','VotePercent'],
-                ['A',10],
-                ['B',20]
-                ]);
-          function drawChart()
-           {
-         
-            // Standard google charts functionality is available as GoogleCharts.api after load
-            const data = GoogleCharts.api.visualization.arrayToDataTable(actualdata);
-            const pie_1_chart = new GoogleCharts.api.visualization.PieChart(document.getElementById('chart'));
-            pie_1_chart.draw(data);
-          }
+           
+       //on click of the save button 
+         $(document).on("click","#SaveBtnId",function()
+            {                                                                     
+                if(IsVoted==true)
+                {
+                  UpdateLoc();
+                }
+                else if(IsVoted==false)
+                {
+                  SaveVote();              
+                }
+          });
+
+          GetCurrentUser();// checking the current user
+          
+          GoogleCharts.load(drawChart);
+          var actualdata=([['Location','VotePercent'],
+                  ['A',10],
+                  ['B',20]
+                  ]);
+            function drawChart()
+            {
+          
+              // Standard google charts functionality is available as GoogleCharts.api after load
+              const data = GoogleCharts.api.visualization.arrayToDataTable(actualdata);
+              const pie_1_chart = new GoogleCharts.api.visualization.PieChart(document.getElementById('ChartId'));
+              pie_1_chart.draw(data);
+            }
       });
-     
+
+      //updating the location if same user want to change the vote
+     function UpdateLoc()
+     {
+      // alert("coming to update");
+      if (Environment.type === EnvironmentType.Local)
+      {
+        this.domElement.querySelector('#SaveBtnId').innerHTML = "Sorry this does not work in local workbench";
+      } 
+      else
+      {
+        pnp.sp.web.lists.getByTitle("Sravani_NewVotes").items.getById(UpdatedId).update
+        ({            
+            LocationId:SelectedId
+        });
+      }
+     }
+
+     //saving the vote of the user
        function SaveVote()
        {
           if (Environment.type === EnvironmentType.Local)
           {
-            this.domElement.querySelector('#saveid').innerHTML = "Sorry this does not work in local workbench";
+            this.domElement.querySelector('#SaveBtnId').innerHTML = "Sorry this does not work in local workbench";
           } 
          else 
            {
-            alert(selid);
+           // alert(selid);
+            
              pnp.sp.web.lists.getByTitle("Sravani_NewVotes").items.add
              ({
-               Title: selid
-              });
-            pnp.sp.web.lists.getByTitle("Sravani_NewVotes").items.getById(selid).update({
-            Title: selid
-              });
+               
+               CUser:CurrentUser,
+               LocationId:SelectedId
+               
+             });
+           
+            
             }
           }
+
+        //getting the current user   
       function GetCurrentUser()
       {
         
           if (Environment.type === EnvironmentType.Local)
           {
-            this.domElement.querySelector('#saveid').innerHTML = "Sorry this does not work in local workbench";
+            this.domElement.querySelector('#UserLabelId').innerHTML = "Sorry this does not work in local workbench";
           } 
           else
           {
             var call = jQuery.ajax
             ({
              
-               url:Url + `/_api/web/lists/getbytitle('Sravani_NewVotes')/Items?$select=LocationId,created By&$filter=Created By`,
-              type: "GET",
+               url:AbsUrl + `/_api/web/lists/getbytitle('Sravani_NewVotes')/Items?$select=LocationId,Title,ID,CUser&$filter=CUser eq '${CurrentUser}'`,
+               type: "GET",
                data: JSON,   
                 
                  headers: 
@@ -144,12 +185,17 @@ export default class VotingCountWebPart extends BaseClientSideWebPart<IVotingCou
            
             call.done(function (data, textStatus, jqXHR) 
             {
-              var userid=$('#UserLabelid');
-              var message =  $("#saveid");
+              UserId=$('#UserLabelId');
               
+              IsVoted=false;
               $.each(data.d.results,function(value,element)
               {
-                userid.append(`"Already voted",${element.LocationId}`);
+                UserId.append(` ${element.CUser} you have already voted `);
+                UpdatedId=`${element.ID}`;
+                $(".btncls").removeClass('active').addClass('disabled');
+                $('#'+element.Title).removeAttr('class');
+                $('#'+element.Title).addClass('active btn btn-success'); 
+                IsVoted=true;
               });
             });
             call.fail(function (jqXHR, textStatus, errorThrown) 
@@ -160,19 +206,19 @@ export default class VotingCountWebPart extends BaseClientSideWebPart<IVotingCou
             });
            
         }  
-      }
+       }
               
-         
+        //retreiving all the locations 
       function GetLocation()
       {
         if (Environment.type === EnvironmentType.Local)
         {
-            this.domElement.querySelector('#buttonid').innerHTML = "Sorry this does not work in local workbench";
+            this.domElement.querySelector('#ButtonId').innerHTML = "Sorry this does not work in local workbench";
         }
         else 
         {
             var call =  $.ajax({
-              url: Url + `/_api/web/lists/getbytitle('Sravani_Location')/Items?$select=Title,ID`,
+              url: AbsUrl + `/_api/web/lists/getbytitle('Sravani_Location')/Items?$select=Title,ID`,
               type: "GET",
               dataType: "json",
             }),
@@ -180,11 +226,12 @@ export default class VotingCountWebPart extends BaseClientSideWebPart<IVotingCou
                 Accept: "application/json;odata=verbose",
               }
             call.done(function (data, textstatus, jqXHR) {
-              var Button =  $("#buttonid");
-      
+              var Button =  $("#ButtonId");
+
+             
               $.each(data.value,function(val,element){
                
-                Button.append(`<button type="button" class="btncls" style="color:DodgerBlue;" id="${element.ID}">${element.Title}</button>&nbsp&nbsp`);
+                Button.append(`<button type="button" class="btncls btncls-success" style="color:DodgerBlue;" id="${element.ID}">${element.Title}</button>&nbsp&nbsp`);
                 //alert(`${element.ID}`);
               });
                 
